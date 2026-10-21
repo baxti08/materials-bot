@@ -25,8 +25,8 @@ dp = Dispatcher()
 dp.include_router(broadcast.router)
 
 WELCOME_TEXT = (
-    "<b>Barchasi BEPUL, materiallarni olish uchun quyidagi kanallarga a'zo bo'ling👇</b>\n\n"
-    "A'zo bo'lgach, materiallar avtomatik yuboriladi."
+    "<b>Listening & Reading materiallar BEPUL, olish uchun shunchaki kanallarga a'zo bo'ling👇</b>\n\n"
+    "Shu zahoti materiallarni yuboramiz."
 )
 
 LEFT_WARNING_TEXT = (
@@ -103,7 +103,7 @@ async def handle_start(message: Message) -> None:
         await db.set_prompt_message_id(user_id, sent.message_id)
         return
 
-    if first_time:
+    if first_time and user_id not in config.EXEMPT_USER_IDS:
         # Already joined everything: still show both channels (this message
         # stays), then send the materials right under it.
         await message.answer(WELCOME_TEXT, reply_markup=channels_keyboard(channels))
@@ -118,7 +118,7 @@ async def handle_chat_member_update(event: ChatMemberUpdated) -> None:
 
     user_id = event.new_chat_member.user.id
 
-    if not await db.user_exists(user_id):
+    if user_id in config.EXEMPT_USER_IDS or not await db.user_exists(user_id):
         return
 
     channels = config.REQUIRED_CHANNELS

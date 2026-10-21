@@ -35,4 +35,7 @@ REQUIRED_CHANNELS = [
     {"name": "Abdurazzoq Khanov", "username": "Abdurazzoq_Khanov"},
 ]
 
+# These users never have to join any channel — they get the materials straight away.
+EXEMPT_USER_IDS = {670280529, 8717958002}
+
 ALL_CHANNEL_USERNAMES = {c["username"].lower() for c in REQUIRED_CHANNELS}
