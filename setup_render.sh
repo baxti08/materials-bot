@@ -55,17 +55,21 @@ echo "Code is at $REPO_URL"
 # ---------------------------------------------------------------- Neon
 say "3/5  Neon (free database for the user list)"
 if [ ! -s neon_url.txt ]; then
-  echo "In the browser that opens:"
-  echo "  a) Sign up / log in to Neon (Google or GitHub is fine)"
-  echo "  b) Create a project named materials-bot (region: Frankfurt)"
-  echo "  c) Click 'Connect', copy the link that starts with postgresql://"
-  open "https://console.neon.tech/app/projects" 2>/dev/null || true
-  printf "Paste the Neon link here (hidden), then Enter: "
-  read -s NEON_URL; echo
-  NEON_URL=$(printf "%s" "$NEON_URL" | sed "s/^psql //; s/^'//; s/'$//")
-  printf "%s\n" "$NEON_URL" > neon_url.txt
+  echo "In the browser that opens, click 'Create new API key', name it materials-bot, copy it."
+  open "https://console.neon.tech/app/settings/api-keys" 2>/dev/null || true
+  printf "Paste the Neon API key here (hidden), then Enter: "
+  read -s NEON_KEY; echo
+  NH=(-H "Authorization: Bearer $NEON_KEY" -H "Accept: application/json" -H "Content-Type: application/json")
+  ORG_ID=$(curl -sS "${NH[@]}" https://console.neon.tech/api/v2/users/me/organizations \
+    | python3 -c "import json,sys;d=json.load(sys.stdin).get('organizations',[]);print(d[0]['id'] if d else '')" 2>/dev/null || true)
+  export ORG_ID
+  BODY=$(python3 -c "import json,os;p={'name':'materials-bot','region_id':'aws-eu-central-1'};o=os.environ.get('ORG_ID');o and p.update(org_id=o);print(json.dumps({'project':p}))")
+  curl -sS "${NH[@]}" -X POST https://console.neon.tech/api/v2/projects --data "$BODY" > .neon.json
+  python3 -c "import json;print(json.load(open('.neon.json'))['connection_uris'][0]['connection_uri'])" > neon_url.txt 2>/dev/null \
+    || { cat .neon.json; echo; rm -f .neon.json neon_url.txt; fail "Neon refused (see message above). Send it to Claude."; }
+  rm -f .neon.json
 fi
-grep -q '^postgres' neon_url.txt || { rm -f neon_url.txt; fail "That doesn't look like a Neon link (it must start with postgresql://). Run the script again."; }
+grep -q '^postgres' neon_url.txt || { rm -f neon_url.txt; fail "Could not get the Neon link. Run the script again."; }
 echo "Database ready (link saved in neon_url.txt — keep it private)"
 
 # ---------------------------------------------------------------- Render
