@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<title>Materials Bot — Admin</title>
+<style>
+  body { font-family: -apple-system, Arial, sans-serif; margin: 24px; background: #0d1117; color: #e6edf3; }
+  h1 { font-size: 20px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+  th, td { border: 1px solid #30363d; padding: 8px 12px; text-align: left; font-size: 14px; vertical-align: top; }
+  th { background: #161b22; }
+  tr:nth-child(even) { background: #0f1520; }
+  .yes { color: #3fb950; font-weight: bold; }
+  .no { color: #f85149; font-weight: bold; }
+  .missing { color: #d29922; }
+  .pagination { margin-top: 16px; display: flex; gap: 12px; align-items: center; }
+  .pagination a { color: #58a6ff; text-decoration: none; }
+  .pagination a.disabled { color: #484f58; pointer-events: none; }
+  .msg { background: #161b22; border: 1px solid #30363d; padding: 10px 14px; border-radius: 6px; margin: 12px 0; }
+  .reset-box { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+  .reset-box input { background: #0d1117; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 7px 10px; font-size: 14px; }
+  button.reset { background: #da3633; color: #fff; border: 0; border-radius: 6px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+  button.reset:hover { background: #f85149; }
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 4px; }
+  .stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 16px; min-width: 150px; }
+  .stat b { display: block; font-size: 24px; color: #d2a8ff; }
+  .stat span { font-size: 13px; color: #8b949e; }
+</style>
+</head>
+<body>
+  <h1>Foydalanuvchilar (jami: {{ total }})</h1>
+  <div class="stats">
+    <div class="stat"><b>{{ stats.total }}</b><span>Jami foydalanuvchilar</span></div>
+    <div class="stat"><b>{{ stats.got_materials }}</b><span>Materiallarni olganlar</span></div>
+    <div class="stat"><b>{{ stats.today_new }}</b><span>Bugun yangi</span></div>
+    <div class="stat"><b>{{ stats.total_starts }}</b><span>Jami start bosilgan</span></div>
+  </div>
+  <p>{{ users|length }} ta ko'rsatilmoqda — sahifa {{ page }} / {{ total_pages }}</p>
+  {% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+  <form class="reset-box" method="post" action="/reset"
+        onsubmit="return confirm('Shu foydalanuvchini reset qilasizmi? U keyingi safar yangi foydalanuvchi bo\'ladi.');">
+    <input type="hidden" name="page" value="{{ page }}">
+    <input type="text" name="user_id" placeholder="Telegram ID" required>
+    <button class="reset" type="submit">Reset</button>
+  </form>
+  <table>
+    <tr>
+      <th>Ism Familiya</th>
+      <th>Username</th>
+      <th>Telegram ID</th>
+      <th>Birinchi start</th>
+      <th>Start bosilgan soni</th>
+      <th>A'zo bo'lmagan kanallar</th>
+      <th>Materiallarni olganmi</th>
+      <th></th>
+    </tr>
+    {% for u in users %}
+    <tr>
+      <td>{{ (u.first_name or "") ~ " " ~ (u.last_name or "") }}</td>
+      <td>{{ "@" ~ u.username if u.username else "-" }}</td>
+      <td>{{ u.user_id }}</td>
+      <td>{{ u.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      <td>{{ u.start_count }}</td>
+      <td class="missing">
+        {% if u.missing_names %}
+          {{ u.missing_names|join(", ") }}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td class="{{ 'yes' if u.has_received_book else 'no' }}">
+        {{ "Ha" if u.has_received_book else "Yo'q" }}
+      </td>
+      <td>
+        <form method="post" action="/reset" style="margin:0"
+              onsubmit="return confirm('{{ u.user_id }} ni reset qilasizmi?');">
+          <input type="hidden" name="user_id" value="{{ u.user_id }}">
+          <input type="hidden" name="page" value="{{ page }}">
+          <button class="reset" type="submit">Reset</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="pagination">
+    <a class="{{ '' if has_prev else 'disabled' }}" href="/?page={{ page - 1 }}">&larr; Oldingi</a>
+    <span>Sahifa {{ page }} / {{ total_pages }}</span>
+    <a class="{{ '' if has_next else 'disabled' }}" href="/?page={{ page + 1 }}">Keyingi &rarr;</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,6 @@
+__pycache__/
+.env
+neon_url.txt
+render_url.txt
+users-*.json
+.venv/
